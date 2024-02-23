@@ -1,24 +1,56 @@
+import abc
 import math
-from abc import ABCMeta
 
 import torch
 from torch import nn, Tensor
 from torch.nn import Linear, Conv2d, Parameter
 
 
-class LoRAModule(metaclass=ABCMeta):
+class BaseLoRAComputation:
+    def __init__(self, lora_type: ThatEnumYouMade):
+        pass
+
+    def forward(self, x):
+        # Do the needful.
+        pass
+
+    def parameters(self):
+        # Do the needful.
+        pass
+
+    def load_state_dict(self):
+        pass
+
+
+class LoRAComputation(BaseLoRAComputation):
+    def __init__(self):
+        super().__init__(ThatEnumYouMade.LoRA)
+        self.lora_down = whatever
+        self.lora_up = whatever
+
+    def forward(self, x):
+        return self.lora_up(self.lora_down(x))
+
+    def parameters(self):
+        return list(self.lora_down.parameters()) + list(self.lora_up.parameters())
+
+    def load_state_dict(self):
+        # You get the idea...
+
+class LoRAModule(metaclass=abc.ABCMeta):
     prefix: str
     orig_module: nn.Module
     lora_down: nn.Module
     lora_up: nn.Module
     alpha: torch.Tensor
 
-    def __init__(self, prefix: str, orig_module: nn.Module | None, rank: int, alpha: float):
+    def __init__(self, prefix: str, orig_module: nn.Module | None, rank: int, alpha: float, computation: LoRAComputation):
         super(LoRAModule, self).__init__()
         self.prefix = prefix.replace('.', '_')
         self.orig_module = orig_module
         self.rank = rank
         self.alpha = torch.tensor(alpha)
+        self.computation = computation
         if orig_module is not None:
             self.alpha = self.alpha.to(orig_module.weight.device)
         self.alpha.requires_grad_(False)
@@ -27,7 +59,7 @@ class LoRAModule(metaclass=ABCMeta):
         self.orig_forward = self.orig_module.forward if self.orig_module is not None else None
 
     def forward(self, x, *args, **kwargs):
-        return self.orig_forward(x) + self.lora_up(self.lora_down(x)) * (self.alpha / self.rank)
+        return self.orig_forward(x) + self.computation(x) * (self.alpha / self.rank)
 
     def requires_grad_(self, requires_grad: bool):
         self.lora_down.requires_grad_(requires_grad)
@@ -40,24 +72,14 @@ class LoRAModule(metaclass=ABCMeta):
         return self
 
     def parameters(self) -> list[Parameter]:
-        return list(self.lora_down.parameters()) + list(self.lora_up.parameters())
+        return self.computation.parameters()
 
     def load_state_dict(self, state_dict: dict):
-        down_state_dict = {
-            "weight": state_dict.pop(self.prefix + ".lora_down.weight")
-        }
-        up_state_dict = {
-            "weight": state_dict.pop(self.prefix + ".lora_up.weight")
-        }
-        self.alpha = state_dict.pop(self.prefix + ".alpha")
-
-        self.lora_down.load_state_dict(down_state_dict)
-        self.lora_up.load_state_dict(up_state_dict)
+        self.computation.load_state_dict(state_dict)
 
     def state_dict(self) -> dict:
         state_dict = {}
-        state_dict[self.prefix + ".lora_down.weight"] = self.lora_down.weight.data
-        state_dict[self.prefix + ".lora_up.weight"] = self.lora_up.weight.data
+        state_dict |= self.computation.state_dict()
         state_dict[self.prefix + ".alpha"] = self.alpha
         return state_dict
 
