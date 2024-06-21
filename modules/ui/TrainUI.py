@@ -14,6 +14,7 @@ from modules.ui.CaptionUI import CaptionUI
 from modules.ui.ConceptTab import ConceptTab
 from modules.ui.ConvertModelUI import ConvertModelUI
 from modules.ui.AdditionalEmbeddingsTab import AdditionalEmbeddingsTab
+from modules.ui.LoraTab import LoraTab
 from modules.ui.ModelTab import ModelTab
 from modules.ui.ProfilingWindow import ProfilingWindow
 from modules.ui.SampleWindow import SampleWindow
@@ -312,51 +313,6 @@ class TrainUI(ctk.CTk):
                          tooltip="The prefix for filenames used when saving the model during training")
         components.entry(master, 4, 1, self.ui_state, "save_filename_prefix")
 
-    def lora_tab(self, master):
-        master.grid_columnconfigure(0, weight=0)
-        master.grid_columnconfigure(1, weight=1)
-        master.grid_columnconfigure(2, minsize=50)
-        master.grid_columnconfigure(3, weight=0)
-        master.grid_columnconfigure(4, weight=1)
-
-        # lora model name
-        components.label(master, 0, 0, "LoRA base model",
-                         tooltip="The base LoRA to train on. Leave empty to create a new LoRA")
-        components.file_entry(
-            master, 0, 1, self.ui_state, "lora_model_name",
-            path_modifier=lambda x: Path(x).parent.absolute() if x.endswith(".json") else x
-        )
-
-        # lora rank
-        components.label(master, 1, 0, "LoRA rank",
-                         tooltip="The rank parameter used when creating a new LoRA")
-        components.entry(master, 1, 1, self.ui_state, "lora_rank")
-
-        # lora rank
-        components.label(master, 2, 0, "LoRA alpha",
-                         tooltip="The alpha parameter used when creating a new LoRA")
-        components.entry(master, 2, 1, self.ui_state, "lora_alpha")
-
-        # Dropout Percentage
-        components.label(master, 3, 0, "Dropout Probability",
-                         tooltip="Dropout probability. This percentage of model nodes will be randomly ignored at each training step. Helps with overfitting. 0 disables, 1 maximum.")
-        components.entry(master, 3, 1, self.ui_state, "dropout_probability")
-
-        # lora weight dtype
-        components.label(master, 4, 0, "LoRA Weight Data Type",
-                         tooltip="The LoRA weight data type used for training. This can reduce memory consumption, but reduces precision")
-        components.options_kv(master, 4, 1, [
-            ("float32", DataType.FLOAT_32),
-            ("bfloat16", DataType.BFLOAT_16),
-        ], self.ui_state, "lora_weight_dtype")
-
-        # For use with additional embeddings.
-        components.label(master, 5, 0, "Bundle Embeddings",
-                         tooltip="Bundles any additional embeddings into the LoRA output file, rather than as separate files")
-        components.switch(master, 5, 1, self.ui_state, "bundle_additional_embeddings")
-
-        return master
-
     def embedding_tab(self, master):
         master.grid_columnconfigure(0, weight=0)
         master.grid_columnconfigure(1, weight=1)
@@ -450,7 +406,7 @@ class TrainUI(ctk.CTk):
             self.tabview.delete("embedding")
 
         if training_method == TrainingMethod.LORA and "LoRA" not in self.tabview._tab_dict:
-            self.lora_tab(self.tabview.add("LoRA"))
+            self.lora_tab = LoraTab(self.tabview.add("LoRA"), self.train_config, self.ui_state)
         if training_method == TrainingMethod.EMBEDDING and "embedding" not in self.tabview._tab_dict:
             self.embedding_tab(self.tabview.add("embedding"))
 
