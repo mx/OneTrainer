@@ -106,7 +106,7 @@ class StableDiffusionLoRASetup(
         )
 
         model.unet_lora = LoRAModuleWrapper(
-            model.unet, config.lora_rank, "lora_unet", config.lora_alpha, ["attentions"]
+            model.unet, config.lora_rank, "lora_unet", config.lora_alpha, config.lora_layers.split(",")
         )
 
         if model.lora_state_dict:
