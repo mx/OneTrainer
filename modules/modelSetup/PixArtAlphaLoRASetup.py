@@ -9,6 +9,13 @@ from modules.util.config.TrainConfig import TrainConfig
 from modules.util.optimizer_util import init_model_parameters
 
 
+PRESETS = {
+    "full": [],
+    "attn-mlp": ["attn1" "attn2", "ff.net"],
+    "attn-only": ["attn1", "attn2"],
+}
+
+
 class PixArtAlphaLoRASetup(
     BasePixArtAlphaSetup,
 ):

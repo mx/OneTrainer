@@ -9,7 +9,6 @@ from modules.util.config.TrainConfig import TrainConfig
 from modules.util.optimizer_util import init_model_parameters
 
 
-# Matches the ones from Lycoris.
 PRESETS = {
     "full": [],
     "attn-mlp": ["attentions"],

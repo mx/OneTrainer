@@ -9,6 +9,18 @@ from modules.util.config.TrainConfig import TrainConfig
 from modules.util.optimizer_util import init_model_parameters
 
 
+# This is correct for the latest cascade, but other Wuerstchen models may have
+# different names. I honestly don't know what makes a good preset here so I'm
+# just guessing.
+PRESETS = {
+    "full": [],
+    "down-blocks": ["down_blocks"],
+    "up-blocks": ["up_blocks"],
+    "mapper-only": ["mapper"],
+    "attn-only": ["attention"],
+}
+
+
 class WuerstchenLoRASetup(
     BaseWuerstchenSetup,
 ):
